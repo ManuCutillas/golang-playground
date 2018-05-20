@@ -14,6 +14,10 @@ import (
 	"log"
 	"os"
 	md "./middlewares"
+	"net/http"
+	"os/signal"
+	"context"
+	"time"
 )
 
 var html = template.Must(template.New("https").Parse(`
@@ -50,8 +54,34 @@ func main() {
 	// HTTP
 	go router.Run(":"+HTTP_PORT)
 
-	// Listen and Server in https://127.0.0.1:8080
-	router.RunTLS(":"+HTTPS_PORT, "./web-server/gin-server/ssl/server.pem", "./web-server/gin-server/ssl/server.key")
+	// Server in https://127.0.0.1:8080
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	go func() {
+		// service connections
+		if err := router.RunTLS(":"+HTTPS_PORT, "./web-server/gin-server/ssl/server.pem", "./web-server/gin-server/ssl/server.key");
+		err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	log.Println("Server exiting")
 }
 
 
