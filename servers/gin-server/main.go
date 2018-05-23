@@ -29,7 +29,7 @@ func setup(engine *gin.Engine) {
 	if addr == ":" {
 		addr = ":3000"
 	}
-	if err := engine.RunTLS(addr, "./web-server/gin-server/ssl/server.pem", "./web-server/gin-server/ssl/server.key"); err != nil && err != http.ErrServerClosed {
+	if err := engine.RunTLS(addr, "./servers/gin-server/ssl/server.pem", "./servers/gin-server/ssl/server.key"); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen: %s\n", err)
 	}
 }
